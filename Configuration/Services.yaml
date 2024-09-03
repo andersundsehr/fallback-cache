@@ -1,0 +1,11 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Weakbit\FallbackCache\EventListener\CacheStatusEventListener:
+    tags:
+      - name: event.listener
+        identifier: 'Weakbit\FallbackCache\EventListener\CacheStatusEventListener'
+        event: Weakbit\FallbackCache\EventListener\CacheStatusEvent

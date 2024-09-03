@@ -1,0 +1,21 @@
+{
+    "name": "weakbit/fallback-cache",
+    "description": "Uses a fallback cache if your cache has status red",
+    "type": "typo3-cms-extension",
+    "license": [
+        "GPL-2.0-or-later"
+    ],
+    "require": {
+        "typo3/cms-core": "^11.5 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Weakbit\\FallbackCache\\": "Classes/"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "fallback_cache"
+        }
+    }
+}
