@@ -3,7 +3,8 @@ services:
     autowire: true
     autoconfigure: true
     public: false
-
+  Weakbit\FallbackCache\Cache\CacheManager:
+    public: true
   Weakbit\FallbackCache\EventListener\CacheStatusEventListener:
     tags:
       - name: event.listener
