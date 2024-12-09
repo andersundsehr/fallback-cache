@@ -13,16 +13,20 @@ In addition, the Cache itself has a new Interface it can implement and tell this
 After the fallback period the cache on the primary system is outdated and has to be cleared!
 
 ## Example
-This defines a pages cache with the fallback cache: pages_fallback
+This defines a pages cache with the fallback cache: pages_fallback.
+
+To catch exceptions a variable frontend is set that sents a event with status yellow on exception.
+
 ```PHP
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages'] = [
-    'frontend' => VariableFrontend::class,
+    'frontend' => \Weakbit\FallbackCache\Cache\Frontend\VariableFrontend::class,
     'backend' => RedisBackend::class,
     'options' => [
         'defaultLifetime' => 604800,
         'compression' => 0,
     ],
     'fallback' => 'pages_fallback',
+    'conrete_frontend' => VariableFrontend::class,
     'groups' => [
         'pages',
     ]
@@ -46,8 +50,6 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fall
     ]
 ];
 ```
-
-Take care, the Fallback should implement the same frontend as the origin cache.
 
 You can *chain* them and also define a fallback for the fallback cache.
 

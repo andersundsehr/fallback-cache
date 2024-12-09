@@ -19,3 +19,4 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][CacheManager::class] = [
     'className' => \Weakbit\FallbackCache\Cache\CacheManager::class
 ];
 
+

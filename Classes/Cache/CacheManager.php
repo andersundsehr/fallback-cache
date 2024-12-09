@@ -14,6 +14,7 @@ use TYPO3\CMS\Core\Cache\Exception\InvalidCacheException;
 use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
 use TYPO3\CMS\Core\Cache\Frontend\PhpFrontend;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use Weakbit\FallbackCache\Enum\StatusEnum;
 use Weakbit\FallbackCache\Event\CacheStatusEvent;
 use Weakbit\FallbackCache\Exception\RecursiveFallbackCacheException;
@@ -179,5 +180,4 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
             $this->createCache($fallback);
         }
     }
-
 }
