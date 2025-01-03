@@ -8,5 +8,5 @@ use Weakbit\FallbackCache\Enum\StatusEnum;
 
 interface CacheStatusInterface
 {
-    function emitCacheStatusEvent(): void;
+    public function emitCacheStatusEvent(): void;
 }
