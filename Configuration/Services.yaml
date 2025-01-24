@@ -13,3 +13,9 @@ services:
       - name: event.listener
         identifier: 'Weakbit\FallbackCache\EventListener\CacheStatusEventListener'
         event: Weakbit\FallbackCache\Event\CacheStatusEvent
+
+  Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener:
+    tags:
+      - name: event.listener
+        identifier: 'Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener'
+        event: TYPO3\CMS\Backend\Backend\Event\SystemInformationToolbarCollectorEvent

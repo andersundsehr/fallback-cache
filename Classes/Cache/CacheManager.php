@@ -12,6 +12,7 @@ use Throwable;
 use TYPO3\CMS\Core\Cache\Exception\DuplicateIdentifierException;
 use TYPO3\CMS\Core\Cache\Exception\InvalidBackendException;
 use TYPO3\CMS\Core\Cache\Exception\InvalidCacheException;
+use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Cache\Frontend\VariableFrontend;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -28,8 +29,6 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
      * @var array<string, string>
      */
     protected array $fallbacks = [];
-
-    protected ?VariableFrontend $cache = null;
 
     /**
      * @var array<string, StatusEnum>
@@ -58,7 +57,6 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
                 throw new InvalidCacheException('Cache must be an instance of VariableFrontend');
             }
 
-            $this->cache = $cache;
             $status = $cache->get('status');
             if (is_array($status)) {
                 static::$status = $status;
@@ -120,7 +118,11 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         }
 
         static::$status[$identifier] = $status;
-        $this->cache?->set('status', static::$status);
+        try {
+            $cache = $this->getCache('weakbit__fallback_cache');
+            $cache->set('status', static::$status);
+        } catch (NoSuchCacheException) {
+        }
     }
 
     protected function createCache($identifier): void
@@ -171,7 +173,7 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         }
     }
 
-    private function getFallbackCacheOf(string $identifier): ?string
+    public function getFallbackCacheOf(string $identifier): ?string
     {
         $fallback = $this->cacheConfigurations[$identifier]['fallback'] ?? null;
 

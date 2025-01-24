@@ -14,3 +14,7 @@ parameters:
   convention.rector_config: rector.php
   convention.rector_clear-cache: false
   convention.phpstan_level: null
+
+grumphp:
+  tasks:
+    securitychecker_enlightn: null
