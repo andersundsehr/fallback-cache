@@ -19,40 +19,37 @@ To catch exceptions a variable frontend is set that sents a event with status ye
 
 ```PHP
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages'] = [
+    // This frontend surrounds the functions by a try, and sends an event on exception (Status yellow)
     'frontend' => \Weakbit\FallbackCache\Cache\Frontend\VariableFrontend::class,
     'backend' => RedisBackend::class,
     'options' => [
         'defaultLifetime' => 604800,
         'compression' => 0,
     ],
+    // If the cache creation fails (Status red) this cache is used 
     'fallback' => 'pages_fallback',
-    'conrete_frontend' => VariableFrontend::class,
+    // The concrete frontend the 'frontend' is based on
+    'conrete_frontend' => \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class,
     'groups' => [
         'pages',
     ]
 ];
+
+// Configure the fallback cache to use the database for example
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback'] = $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages'];
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback']['backend'] = SimpleFileBackend::class;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback']['backend'] = Typo3DatabaseBackend::class;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback']['options'] = [
     'defaultLifetime' => 604800,
-];
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback']['fallback'] = 'pages_fallback_fallback';
-
-// possible, but do you need that??
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages_fallback_fallback'] = [
-    'frontend' => VariableFrontend::class,
-    'backend' => Typo3DatabaseBackend::class,
-    'options' => [
-        'compression' => 1,
-    ],
-    'groups' => [
-        'pages',
-    ]
 ];
 ```
 
 You can *chain* them and also define a fallback for the fallback cache.
 
-You could end the chain with a cache with the NullBackend, if that also fails the hope for this TYPO3 request is lost. 
+You could end the chain with a cache with the NullBackend, if that also fails the hope for this TYPO3 request is lost. But using no cache may bring down your server, but that depends on the server and application.
+
+# TODO
+- [ ] Give a possibility to see the actual state of the caches
+- [ ] Refactor addCacheStatus to comply with external calls
+
 
 Inspired by https://packagist.org/packages/b13/graceful-cache

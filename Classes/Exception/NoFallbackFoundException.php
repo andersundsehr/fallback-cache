@@ -6,6 +6,6 @@ namespace Weakbit\FallbackCache\Exception;
 
 use RuntimeException;
 
-class RecursiveFallbackCacheException extends RuntimeException
+class NoFallbackFoundException extends RuntimeException
 {
 }

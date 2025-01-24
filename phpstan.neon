@@ -1,0 +1,10 @@
+includes:
+  - phpstan-baseline.neon
+  - vendor/andersundsehr/phpstan-git-files/extension.php
+
+parameters:
+  level: 9
+  phpVersion: 80300
+  reportUnmatchedIgnoredErrors: false
+  excludePaths:
+      - 'Tests/*'
