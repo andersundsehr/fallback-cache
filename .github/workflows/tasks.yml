@@ -1,0 +1,67 @@
+name: PHP Composer
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ '81', '82', '83', '84']
+        typo3: [ '11', '12', '13' ]
+        exclude:
+          - php: '84'
+            typo3: '11'
+          - php: '81'
+            typo3: '13'
+    outputs:
+      result: ${{ steps.set-result.outputs.result }}
+      php: ${{ matrix.php }}
+      typo3: ${{ matrix.typo3 }}
+    container:
+      image: ghcr.io/typo3/core-testing-php${{ matrix.php }}:latest
+    steps:
+      - name: Check OS
+        run: cat /etc/os-release
+      - name: Install Node.js (Alpine)
+        run: apk add --no-cache nodejs npm
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache/files
+            vendor
+            node_modules
+          key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.php }}-composer-
+      - run: composer update --with typo3/minimal:^${{ matrix.typo3 }} --ignore-platform-req=php+
+      - run: ./vendor/bin/grumphp run --ansi --no-interaction
+      - run: composer test
+      - name: Save result
+        if: always()
+        run: |
+          mkdir -p summary
+          echo "PHP=${{ matrix.php }} TYPO3=${{ matrix.typo3 }} RESULT=${{ job.status }}" \
+            >> summary/results.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.php }}-${{ matrix.typo3 }}
+          path: summary/results.txt
+  summary:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: summary
+      - name: Show results
+        run: |
+          echo "### Matrix results"
+          cat summary/**/results.txt

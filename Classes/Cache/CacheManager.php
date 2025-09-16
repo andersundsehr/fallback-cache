@@ -41,11 +41,6 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     protected array $seen = [];
 
     /**
-     * @var array<string>
-     */
-    protected array $breadcrumb = [];
-
-    /**
      * @param array<string, array<mixed>> $cacheConfigurations
      */
     public function setCacheConfigurations(array $cacheConfigurations): void
@@ -54,12 +49,16 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         try {
             $cache = $this->getCache('weakbit__fallback_cache');
             if (!$cache instanceof VariableFrontend) {
-                throw new InvalidCacheException('Cache must be an instance of VariableFrontend');
+                throw new InvalidCacheException('Cache must be an instance of VariableFrontend', 1736962058);
             }
 
             $status = $cache->get('status');
             if (is_array($status)) {
-                static::$status = $status;
+                foreach ($status as $identifier => $state) {
+                    if (is_string($identifier) && $state instanceof StatusEnum) {
+                        static::$status[$identifier] = $state;
+                    }
+                }
             }
         } catch (Throwable $throwable) {
             $this->logger?->error($throwable->getMessage());
@@ -68,11 +67,11 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
 
     public function getCache($identifier): FrontendInterface
     {
-        // could set to red during runtie of this(!) process
+        // could set to red during runtime of this(!) process
         if (!isset(static::$status[$identifier]) || static::$status[$identifier] !== StatusEnum::RED) {
             // can be null e.g. if the class was not found.
             /** @var FrontendInterface|null $cache */
-            $cache = parent::getCache($identifier);
+            $cache = @parent::getCache($identifier);
             if ($cache) {
                 return $cache;
             }
@@ -81,14 +80,14 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         try {
             $fallback = $this->getFallbackCacheOf($identifier);
             if (null === $fallback) {
-                throw new NoFallbackFoundException('No fallback found for ' . $identifier);
+                throw new NoFallbackFoundException('No fallback found for ' . $identifier, 5859365252);
             }
 
             $cache = $this->getCache($this->fallbacks[$identifier]);
         } catch (RecursiveFallbackCacheException | NoFallbackFoundException $exception) {
             $this->logger?->error($exception->getMessage());
             $chain = $this->getBreadcrumb($identifier);
-            throw new RuntimeException('Could not instanciate cache using the chain ' . $chain, $exception->getCode(), $exception);
+            throw new RuntimeException('Could not create cache using the chain ' . $chain, $exception->getCode(), $exception);
         }
 
         return $cache;
@@ -112,8 +111,8 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
 
     public function addCacheStatus(string $identifier, StatusEnum $status): void
     {
-        // do not overwrite the highest state
-        if (isset(static::$status[$identifier]) && static::$status[$identifier] === StatusEnum::RED) {
+        // Always set RED, never overwrite RED with YELLOW, but always allow GREEN
+        if (isset(static::$status[$identifier]) && (static::$status[$identifier] === StatusEnum::RED && $status === StatusEnum::YELLOW)) {
             return;
         }
 
@@ -134,11 +133,10 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
 
         try {
             parent::createCache($identifier);
-        } catch (InvalidCacheException | InvalidBackendException | RecursiveFallbackCacheException $exception) {
+        } catch (InvalidCacheException | InvalidBackendException $exception) {
             throw $exception;
         } catch (Throwable $throwable) {
             $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
-            assert($eventDispatcher instanceof EventDispatcherInterface);
             $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::RED, $identifier, $throwable));
             $this->createCacheWithFallback($identifier);
         }
@@ -168,9 +166,11 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
             return;
         }
 
-        if (!$this->hasCache($fallback)) {
+        if (!isset($this->caches[$fallback])) {
             $this->createCache($fallback);
         }
+
+        $this->caches[$identifier] = $this->caches[$fallback];
     }
 
     public function getFallbackCacheOf(string $identifier): ?string
@@ -191,7 +191,7 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     }
 
     /**
-     * registers all fallback caches in the chain to prevent endess loops
+     * registers all fallback caches in the chain to prevent endless loops
      */
     private function isSeen(?string $fallback): bool
     {

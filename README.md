@@ -29,7 +29,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages'] = 
     // If the cache creation fails (Status red) this cache is used 
     'fallback' => 'pages_fallback',
     // The concrete frontend the 'frontend' is based on
-    'conrete_frontend' => \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class,
+    'concrete_frontend' => \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class,
     'groups' => [
         'pages',
     ]

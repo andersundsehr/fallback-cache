@@ -22,7 +22,7 @@ return static function (RectorConfig $rectorConfig): void {
 
     $paths = array_filter(
         explode("\n", (string)shell_exec("git ls-files | xargs ls -d 2>/dev/null | grep -E '\.(php|html|typoscript)$'")),
-        static function ($path) {
+        static function ($path): bool {
             if (!$path) {
                 return false;
             }
@@ -30,7 +30,7 @@ return static function (RectorConfig $rectorConfig): void {
             return !str_starts_with($path, 'Tests/');
         }
     );
-    var_dump($paths);
+
     $rectorConfig->paths(
         $paths
     );
@@ -49,11 +49,11 @@ return static function (RectorConfig $rectorConfig): void {
         [
             ...RectorSettings::skip(),
             ...RectorSettings::skipTypo3(),
-            FinalizePublicClassConstantRector::class,
+            //FinalizePublicClassConstantRector::class,
             PrivatizeFinalClassPropertyRector::class,
             PrivatizeFinalClassMethodRector::class,
-            FinalizeClassesWithoutChildrenRector::class,
-            DateTimeAspectInsteadOfGlobalsExecTimeRector::class,
+            //FinalizeClassesWithoutChildrenRector::class,
+            //DateTimeAspectInsteadOfGlobalsExecTimeRector::class,
             RemoveExtraParametersRector::class,
             RemoveUnusedPrivateMethodRector::class,
 
