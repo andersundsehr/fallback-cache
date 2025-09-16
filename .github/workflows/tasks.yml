@@ -10,6 +10,8 @@ jobs:
     name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: true
+      max-parallel: 2
       matrix:
         php: [ '81', '82', '83', '84']
         typo3: [ '11', '12', '13' ]
@@ -39,6 +41,7 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.php }}-composer-
+      - run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - run: composer update --with typo3/minimal:^${{ matrix.typo3 }} --ignore-platform-req=php+
       - run: ./vendor/bin/grumphp run --ansi --no-interaction
       - run: composer test
