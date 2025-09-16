@@ -10,10 +10,10 @@ jobs:
     name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      fail-fast: false
       max-parallel: 2
       matrix:
-        php: [ '81', '82', '83', '84']
+        php: [ '81', '82', '83', '84' ]
         typo3: [ '11', '12', '13' ]
         exclude:
           - php: '84'
@@ -38,9 +38,9 @@ jobs:
             ~/.composer/cache/files
             vendor
             node_modules
-          key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ matrix.typo3 }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.php }}-composer-
+            ${{ matrix.typo3 }}-${{ matrix.php }}-composer-
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - run: composer update --with typo3/minimal:^${{ matrix.typo3 }} --ignore-platform-req=php+
       - run: ./vendor/bin/grumphp run --ansi --no-interaction
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results-${{ matrix.php }}-${{ matrix.typo3 }}
+          name: ${{ matrix.typo3 }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}
           path: summary/results.txt
   summary:
     runs-on: ubuntu-latest

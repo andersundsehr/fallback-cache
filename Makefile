@@ -9,7 +9,7 @@ PLATFORM  ?= -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-24.04
 SECRETS   ?= --secret-file .secrets
 
 ACT_ARGS ?= \
-  --artifact-server-path /home/act/.cache/artifacts
+  --artifact-server-path /home/act/.cache/artifacts-fallback-cache
 
 define DOCKER_RUN
 docker run --rm -it \
