@@ -12,6 +12,16 @@ In addition, the Cache itself has a new Interface it can implement and tell this
 
 After the fallback period the cache on the primary system is outdated and has to be cleared!
 
+# Recommendation
+
+It is recommended to set
+```PHP
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][CacheManager::class] = [ 'className' => \Weakbit\FallbackCache\Cache\CacheManager::class ];
+```
+in additional.php or the equivalent settings.php file.
+
+This ensures the override is applied early and reliably, avoiding issues with loading order or race conditions that can occur if set in extension files like ext_localconf.php.
+
 ## Example
 This defines a pages cache with the fallback cache: pages_fallback.
 
