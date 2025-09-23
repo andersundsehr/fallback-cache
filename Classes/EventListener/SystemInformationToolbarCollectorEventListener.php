@@ -1,11 +1,14 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 declare(strict_types=1);
 
 namespace Weakbit\FallbackCache\EventListener;
 
 use TYPO3\CMS\Backend\Backend\Event\SystemInformationToolbarCollectorEvent;
 use TYPO3\CMS\Backend\Toolbar\Enumeration\InformationStatus;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
 use TYPO3\CMS\Core\Cache\Frontend\VariableFrontend;
@@ -15,6 +18,10 @@ use Weakbit\FallbackCache\Enum\StatusEnum;
 /**
  * displays some information about caches in the system information toolbar
  */
+#[AsEventListener(
+    identifier: \Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener::class,
+    event: SystemInformationToolbarCollectorEvent::class,
+)]
 class SystemInformationToolbarCollectorEventListener
 {
     public function __invoke(SystemInformationToolbarCollectorEvent $event): void

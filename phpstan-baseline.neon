@@ -1,2 +1,3 @@
 parameters:
-	ignoreErrors: []
+  ignoreErrors:
+    - '#Attribute class TYPO3\\CMS\\Core\\Attribute\\AsEventListener does not exist#'

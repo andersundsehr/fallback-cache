@@ -4,7 +4,6 @@ includes:
 
 parameters:
   level: 9
-  phpVersion: 80300
   reportUnmatchedIgnoredErrors: false
   excludePaths:
-      - 'Tests/*'
+    - 'Tests/*'

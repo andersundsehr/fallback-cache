@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 declare(strict_types=1);
 
 namespace Weakbit\FallbackCache\Cache\Frontend;
@@ -22,11 +24,17 @@ class VariableFrontend implements FrontendInterface
      */
     public function __construct(private readonly string $identifier, BackendInterface $backend)
     {
-        // Need to get directly as the CacheManager is no fully compilant here (on cli)
+        // Need to get directly as the CacheManager is no fully compliant here (on cli)
+        // @phpstan-ignore-next-line
+        if (!isset($GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations'][$this->identifier])) {
+            throw new Exception('No cache configuration found for identifier ' . $this->identifier, 5511139720);
+        }
+
         $configuration = $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations'][$this->identifier];
-        $concreteClassName = $configuration['conrete_frontend'] ?? $configuration['frontend'] ?? \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class;
+        assert(is_array($configuration));
+        $concreteClassName = $configuration['concrete_frontend'] ?? $configuration['frontend'] ?? \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class;
         if (!is_string($concreteClassName)) {
-            throw new Exception('Invalid concrete frontend class name');
+            throw new Exception('Invalid concrete frontend class name', 5511139721);
         }
 
         /** @var class-string $concreteClassName */
@@ -129,7 +137,6 @@ class VariableFrontend implements FrontendInterface
     private function handle(Throwable|Exception $exception): void
     {
         $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
-        assert($eventDispatcher instanceof EventDispatcherInterface);
         $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::YELLOW, $this->identifier, $exception));
     }
 
