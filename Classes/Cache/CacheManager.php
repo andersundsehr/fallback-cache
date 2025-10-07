@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Weakbit\FallbackCache\Cache;
 
+use Override;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -13,6 +14,7 @@ use TYPO3\CMS\Core\Cache\Exception\DuplicateIdentifierException;
 use TYPO3\CMS\Core\Cache\Exception\InvalidBackendException;
 use TYPO3\CMS\Core\Cache\Exception\InvalidCacheException;
 use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
+use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheGroupException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Cache\Frontend\VariableFrontend;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -154,6 +156,11 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         };
     }
 
+    private function isImmutable(string $identifier): bool
+    {
+        return (bool)($this->cacheConfigurations[$identifier]['tags'][0]['immutable'] ?? false);
+    }
+
     /**
      * @throws DuplicateIdentifierException
      * @throws InvalidBackendException
@@ -202,5 +209,129 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     {
         $this->logger?->warning('Registering fallback cache ' . $fallback . ' for ' . $identifier);
         $this->fallbacks[$identifier] = $fallback;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCaches(): void
+    {
+        $this->createAllCaches();
+        foreach ($this->caches as $cache) {
+            if ($this->isImmutable($cache->getIdentifier())) {
+                continue;
+            }
+
+            $cache->flush();
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCachesInGroup($groupIdentifier): void
+    {
+        $this->createAllCaches();
+        if (!isset($this->cacheGroups[$groupIdentifier])) {
+            throw new NoSuchCacheGroupException("No cache in the specified group '" . $groupIdentifier . "'", 1390334120);
+        }
+
+        foreach ($this->cacheGroups[$groupIdentifier] as $cacheIdentifier) {
+            if (isset($this->caches[$cacheIdentifier])) {
+                if ($this->isImmutable($cacheIdentifier)) {
+                    continue;
+                }
+
+                $this->caches[$cacheIdentifier]->flush();
+            }
+        }
+    }
+
+    /**
+     * @param string $groupIdentifier
+     * @param string $tag Tag to search for
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCachesInGroupByTag($groupIdentifier, $tag): void
+    {
+        if (empty($tag)) {
+            return;
+        }
+
+        $this->createAllCaches();
+        if (!isset($this->cacheGroups[$groupIdentifier])) {
+            throw new NoSuchCacheGroupException("No cache in the specified group '" . $groupIdentifier . "'", 1390337129);
+        }
+
+        foreach ($this->cacheGroups[$groupIdentifier] as $cacheIdentifier) {
+            if (isset($this->caches[$cacheIdentifier])) {
+                if ($this->isImmutable($cacheIdentifier)) {
+                    continue;
+                }
+
+                $this->caches[$cacheIdentifier]->flushByTag($tag);
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCachesInGroupByTags($groupIdentifier, array $tags): void
+    {
+        if ($tags === []) {
+            return;
+        }
+
+        $this->createAllCaches();
+        if (!isset($this->cacheGroups[$groupIdentifier])) {
+            throw new NoSuchCacheGroupException("No cache in the specified group '" . $groupIdentifier . "'", 1390337130);
+        }
+
+        foreach ($this->cacheGroups[$groupIdentifier] as $cacheIdentifier) {
+            if (isset($this->caches[$cacheIdentifier])) {
+                if ($this->isImmutable($cacheIdentifier)) {
+                    continue;
+                }
+
+                $this->caches[$cacheIdentifier]->flushByTags($tags);
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCachesByTag($tag): void
+    {
+        $this->createAllCaches();
+        foreach ($this->caches as $cache) {
+            if ($this->isImmutable($cache->getIdentifier())) {
+                continue;
+            }
+
+            $cache->flushByTag($tag);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    #[Override]
+    public function flushCachesByTags(array $tags): void
+    {
+        $this->createAllCaches();
+        foreach ($this->caches as $cache) {
+            if ($this->isImmutable($cache->getIdentifier())) {
+                continue;
+            }
+
+            $cache->flushByTags($tags);
+        }
     }
 }
