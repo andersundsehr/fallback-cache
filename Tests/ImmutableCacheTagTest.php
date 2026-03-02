@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Weakbit\FallbackCache\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\TransientMemoryBackend;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
@@ -80,6 +81,7 @@ class ImmutableCacheTagTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function flushMethodDoesNotFlushImmutableCaches(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
@@ -127,6 +129,7 @@ class ImmutableCacheTagTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException|NoSuchCacheGroupException
      */
+    #[Test]
     public function flushCachesInGroupDoesNotFlushImmutableCaches(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);

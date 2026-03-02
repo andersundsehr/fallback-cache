@@ -13,7 +13,7 @@
     "phpstan/extension-installer": "^1.1",
     "pluswerk/grumphp-config": "*",
     "rybakit/msgpack": "*",
-    "saschaegerer/phpstan-typo3": "*",
+    "saschaegerer/phpstan-typo3": "^2.0.0 || ^3.0.1",
     "ssch/typo3-rector": "*",
     "typo3/testing-framework": "*"
   },

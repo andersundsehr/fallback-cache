@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Weakbit\FallbackCache\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Core\Cache\Backend\FileBackend;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
@@ -114,6 +115,7 @@ class FallbackCacheTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function testGetGoodCacheReturnsCache(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
@@ -126,6 +128,7 @@ class FallbackCacheTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function testGetBadCacheThrowsException(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
@@ -138,6 +141,7 @@ class FallbackCacheTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function testGetBrokenCacheReturnsFallbackCache(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
@@ -150,6 +154,7 @@ class FallbackCacheTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function testGetStatusRedCacheReturnsFallbackCache(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
@@ -170,6 +175,7 @@ class FallbackCacheTest extends FunctionalTestCase
      * @test
      * @throws NoSuchCacheException
      */
+    #[Test]
     public function testCacheBackendStateVerificationAfterFallback(): void
     {
         $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
