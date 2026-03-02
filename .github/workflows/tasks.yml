@@ -13,13 +13,12 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        php: [ '81', '82', '83', '84' ]
+        php: [ '82', '83', '84' ]
         typo3: [ '11', '12', '13' ]
         exclude:
           - php: '84'
             typo3: '11'
-          - php: '81'
-            typo3: '13'
+
     outputs:
       result: ${{ steps.set-result.outputs.result }}
       php: ${{ matrix.php }}
@@ -32,13 +31,16 @@ jobs:
       - name: Install Node.js (Alpine)
         run: apk add --no-cache nodejs npm
       - uses: actions/checkout@v4
+      - name: Get composer project name
+        id: composer-name
+        run: echo "name=$(php -r "echo str_replace('/', '-', json_decode(file_get_contents('composer.json'))->name);")" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         with:
           path: |
             ~/.composer/cache/files
             vendor
             node_modules
-          key: ${{ matrix.typo3 }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}
+          key: ${{ matrix.typo3 }}-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
           restore-keys: |
             ${{ matrix.typo3 }}-${{ matrix.php }}-composer-
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -54,17 +56,23 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ matrix.typo3 }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}
+          name: ${{ steps.composer-name.outputs.name }}-${{ matrix.typo3 }}-${{ matrix.php }}
           path: summary/results.txt
   summary:
     runs-on: ubuntu-latest
     needs: build
     if: always()
     steps:
+      - uses: actions/checkout@v4
+      - name: Get composer project name
+        id: composer-name
+        run: echo "name=$(python3 -c "import json; d=json.load(open('composer.json')); print(d['name'].replace('/', '-'))")" >> $GITHUB_OUTPUT
       - uses: actions/download-artifact@v4
         with:
           path: summary
+          pattern: ${{ steps.composer-name.outputs.name }}-*
+          merge-multiple: false
       - name: Show results
         run: |
           echo "### Matrix results"
-          cat summary/**/results.txt
+          find summary -name results.txt | sort | xargs cat
