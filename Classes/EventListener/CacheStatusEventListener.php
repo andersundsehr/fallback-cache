@@ -12,7 +12,7 @@ use TYPO3\CMS\Core\Cache\CacheManager;
 use Weakbit\FallbackCache\Event\CacheStatusEvent;
 
 #[AsEventListener(
-    identifier: \Weakbit\FallbackCache\EventListener\CacheStatusEventListener::class,
+    identifier: CacheStatusEventListener::class,
     event: CacheStatusEvent::class,
 )]
 class CacheStatusEventListener

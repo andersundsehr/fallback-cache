@@ -11,6 +11,7 @@ use Rector\Php81\Rector\ClassConst\FinalizePublicClassConstantRector;
 use Rector\Privatization\Rector\Class_\FinalizeClassesWithoutChildrenRector;
 use Rector\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector;
 use Rector\Privatization\Rector\Property\PrivatizeFinalClassPropertyRector;
+use Ssch\TYPO3Rector\CodeQuality\General\GeneralUtilityMakeInstanceToConstructorPropertyRector;
 use Ssch\TYPO3Rector\Rector\v11\v0\DateTimeAspectInsteadOfGlobalsExecTimeRector;
 
 return static function (RectorConfig $rectorConfig): void {
@@ -56,6 +57,7 @@ return static function (RectorConfig $rectorConfig): void {
             //DateTimeAspectInsteadOfGlobalsExecTimeRector::class,
             RemoveExtraParametersRector::class,
             RemoveUnusedPrivateMethodRector::class,
+            GeneralUtilityMakeInstanceToConstructorPropertyRector::class,
 
             /**
              * rector should not touch these files

@@ -57,9 +57,71 @@ You can *chain* them and also define a fallback for the fallback cache.
 
 You could end the chain with a cache with the NullBackend, if that also fails the hope for this TYPO3 request is lost. But using no cache may bring down your server, but that depends on the server and application.
 
+## Immutable Cache Configuration
+
+This extension provides the ability to mark certain caches as "immutable", which means they will not be affected by cache flushing operations. This is particularly useful for caches that contain data that rarely changes and is expensive to regenerate, such as compiled templates, code caches, or reference data.
+
+⚠️ **WARNING**: Immutable caches must be manually managed by developers. The system will NOT automatically clear these caches during regular maintenance operations!
+
+### How to Configure Immutable Caches
+
+To mark a cache as immutable, add the `tags` configuration with the `immutable` property set to `true`:
+
+
+
+```PHP
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['my_immutable_cache'] = [
+    'frontend' => \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class,
+    'backend' => \TYPO3\CMS\Core\Cache\Backend\FileBackend::class,
+    'options' => [
+        'defaultLifetime' => 604800,
+    ],
+    'groups' => [
+        'system',
+    ],
+    'tags' => [
+        ['name' => 'cache', 'identifier' => 'my_immutable_cache', 'immutable' => true]
+    ]
+];
+```
+
+### Behavior of Immutable Caches
+
+When a cache is marked as immutable:
+
+1. It will **not** be cleared when `flushCaches()` is called
+2. It will **not** be cleared when `flushCachesByTag()` is called with any tags
+3. It will **not** be cleared when `flushCachesInGroup()` is called, even if the cache belongs to that group
+
+This feature ensures that important cache entries remain available even during maintenance operations or when other parts of the system trigger cache flushes.
+
+### When to Use Immutable Caches
+
+Consider using immutable caches for:
+
+- Compiled templates or CSS/JS assets that rarely change
+- Code caches that are expensive to regenerate
+- Core configuration data that is only updated during system upgrades
+- Any cache data where regeneration would cause significant load on the system
+
+When you need to update an immutable cache, you'll need to manually clear it using direct backend operations or by temporarily removing the immutable flag.
+
+# How to Access the Cache Status
+
+1. Log in to your TYPO3 backend
+2. Look at the top toolbar (the black bar at the top of the screen)
+3. Find the system information icon (typically shows system details like TYPO3 version)
+4. Click on this icon to see a dropdown menu
+5. The cache status will be displayed
+
+![Cache Status in System Information Toolbar](Documentation/system-information.png)
+
 # TODO
-- [ ] Give a possibility to see the actual state of the caches
+
 - [ ] Refactor addCacheStatus to comply with external calls
 
+# Credits
 
 Inspired by https://packagist.org/packages/b13/graceful-cache
+
+Uses code from https://github.com/marketing-factory/typo3_prometheus

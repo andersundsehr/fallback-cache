@@ -19,7 +19,7 @@ use Weakbit\FallbackCache\Enum\StatusEnum;
  * displays some information about caches in the system information toolbar
  */
 #[AsEventListener(
-    identifier: \Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener::class,
+    identifier: SystemInformationToolbarCollectorEventListener::class,
     event: SystemInformationToolbarCollectorEvent::class,
 )]
 class SystemInformationToolbarCollectorEventListener
