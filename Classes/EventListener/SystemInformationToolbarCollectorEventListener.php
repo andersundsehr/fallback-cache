@@ -7,7 +7,7 @@ declare(strict_types=1);
 namespace Weakbit\FallbackCache\EventListener;
 
 use TYPO3\CMS\Backend\Backend\Event\SystemInformationToolbarCollectorEvent;
-use TYPO3\CMS\Backend\Toolbar\Enumeration\InformationStatus;
+use TYPO3\CMS\Backend\Toolbar\InformationStatus;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Exception\NoSuchCacheException;
@@ -39,7 +39,7 @@ class SystemInformationToolbarCollectorEventListener
                 'Fallback Cache Status',
                 'Cache must be an instance of VariableFrontend',
                 'actions-play',
-                InformationStatus::STATUS_WARNING
+                InformationStatus::WARNING
             );
             return;
         }
@@ -50,7 +50,7 @@ class SystemInformationToolbarCollectorEventListener
                 'Fallback Cache Status',
                 'No status found',
                 'actions-play',
-                InformationStatus::STATUS_INFO
+                InformationStatus::INFO
             );
             return;
         }
@@ -58,7 +58,8 @@ class SystemInformationToolbarCollectorEventListener
         foreach ($status as $identifier => $oneStatus) {
             assert(is_string($identifier));
             $fallBack = null;
-            if ($cacheManager instanceof \Weakbit\FallbackCache\Cache\CacheManager) {
+            // Fallback is just used on RED, while YELLOW is hope to recover the primary cache soon
+            if ($oneStatus === StatusEnum::RED && $cacheManager instanceof \Weakbit\FallbackCache\Cache\CacheManager) {
                 $fallBack = $cacheManager->getFallbackCacheOf($identifier);
             }
 
@@ -68,7 +69,7 @@ class SystemInformationToolbarCollectorEventListener
                 substr($identifier, 0, 15),
                 $oneStatus->name . ($fallBack ? ' (fallback: ' . $fallBack . ')' : ''),
                 'actions-play',
-                $oneStatus === StatusEnum::RED ? InformationStatus::STATUS_ERROR : InformationStatus::STATUS_WARNING
+                $oneStatus === StatusEnum::RED ? InformationStatus::ERROR : InformationStatus::WARNING
             );
         }
     }

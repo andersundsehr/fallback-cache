@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace Weakbit\FallbackCache\Cache\Frontend;
 
 use Exception;
+use Override;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Backend\BackendInterface;
@@ -46,6 +47,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function has($entryIdentifier): bool
     {
         try {
@@ -59,6 +61,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function remove($entryIdentifier): bool
     {
         try {
@@ -72,6 +75,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function flush(): void
     {
         try {
@@ -84,6 +88,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function flushByTags(array $tags): void
     {
         try {
@@ -96,6 +101,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function flushByTag($tag): void
     {
         try {
@@ -111,7 +117,8 @@ class VariableFrontend implements FrontendInterface
      * @param mixed $data The data to cache - also depends on the concrete cache implementation
      * @param array<mixed> $tags Tags to associate with this cache entry
      * @param int $lifetime Lifetime of this cache entry in seconds. If NULL is specified, the default lifetime is used. "0" means unlimited lifetime.
- */
+     */
+    #[Override]
     public function set($entryIdentifier, $data, array $tags = [], $lifetime = null): void
     {
         try {
@@ -124,7 +131,8 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
-    public function get($entryIdentifier)
+    #[Override]
+    public function get($entryIdentifier): mixed
     {
         try {
             return $this->concrete->get($entryIdentifier);
@@ -143,6 +151,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -151,6 +160,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function getBackend(): BackendInterface
     {
         return $this->concrete->getBackend();
@@ -159,6 +169,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function collectGarbage(): void
     {
         $this->concrete->collectGarbage();
@@ -167,6 +178,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function isValidEntryIdentifier($identifier): bool
     {
         return $this->concrete->isValidEntryIdentifier($identifier);
@@ -175,6 +187,7 @@ class VariableFrontend implements FrontendInterface
     /**
      * @inheritdoc
      */
+    #[Override]
     public function isValidTag($tag): bool
     {
         return $this->concrete->isValidTag($tag);

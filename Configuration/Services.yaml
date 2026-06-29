@@ -6,16 +6,6 @@ services:
 
   Weakbit\FallbackCache\:
     resource: '../Classes/*'
-    exclude: '../Classes/**/{Model,Dto,Enum}/*'
-
-  Weakbit\FallbackCache\EventListener\CacheStatusEventListener:
-    tags:
-      - name: event.listener
-        identifier: 'Weakbit\FallbackCache\EventListener\CacheStatusEventListener'
-        event: Weakbit\FallbackCache\Event\CacheStatusEvent
-
-  Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener:
-    tags:
-      - name: event.listener
-        identifier: 'Weakbit\FallbackCache\EventListener\SystemInformationToolbarCollectorEventListener'
-        event: TYPO3\CMS\Backend\Backend\Event\SystemInformationToolbarCollectorEvent
+    exclude:
+      - '../Classes/**/{Model,Dto,Enum}/*'
+      - '../Classes/RateLimiter/Storage/*'

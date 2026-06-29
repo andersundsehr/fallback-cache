@@ -1,5 +1,4 @@
 includes:
-  - phpstan-baseline.neon
   - vendor/andersundsehr/phpstan-git-files/extension.php
 
 parameters:

@@ -10,24 +10,14 @@ jobs:
     name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
-      max-parallel: 2
+      fail-fast: true
+      max-parallel: 1
       matrix:
-        php: [ '82', '83', '84' ]
-        typo3: [ '11', '12', '13' ]
-        exclude:
-          - php: '84'
-            typo3: '11'
-
-    outputs:
-      result: ${{ steps.set-result.outputs.result }}
-      php: ${{ matrix.php }}
-      typo3: ${{ matrix.typo3 }}
+        php: [ '82', '83', '84', '85' ]
+        typo3: [ '13', '14' ]
     container:
       image: ghcr.io/typo3/core-testing-php${{ matrix.php }}:latest
     steps:
-      - name: Check OS
-        run: cat /etc/os-release
       - name: Install Node.js (Alpine)
         run: apk add --no-cache nodejs npm
       - uses: actions/checkout@v4
@@ -44,35 +34,6 @@ jobs:
           restore-keys: |
             ${{ matrix.typo3 }}-${{ matrix.php }}-composer-
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - run: composer update --with typo3/minimal:^${{ matrix.typo3 }} --ignore-platform-req=php+
+      - run: composer update --no-interaction --with typo3/minimal:^${{ matrix.typo3 }}.0.0 --with typo3/cms-core:^${{ matrix.typo3 }}.0.0
       - run: ./vendor/bin/grumphp run --ansi --no-interaction
       - run: composer test
-      - name: Save result
-        if: always()
-        run: |
-          mkdir -p summary
-          echo "PHP=${{ matrix.php }} TYPO3=${{ matrix.typo3 }} RESULT=${{ job.status }}" \
-            >> summary/results.txt
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ steps.composer-name.outputs.name }}-${{ matrix.typo3 }}-${{ matrix.php }}
-          path: summary/results.txt
-  summary:
-    runs-on: ubuntu-latest
-    needs: build
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get composer project name
-        id: composer-name
-        run: echo "name=$(python3 -c "import json; d=json.load(open('composer.json')); print(d['name'].replace('/', '-'))")" >> $GITHUB_OUTPUT
-      - uses: actions/download-artifact@v4
-        with:
-          path: summary
-          pattern: ${{ steps.composer-name.outputs.name }}-*
-          merge-multiple: false
-      - name: Show results
-        run: |
-          echo "### Matrix results"
-          find summary -name results.txt | sort | xargs cat

@@ -53,6 +53,9 @@ class FallbackCacheTest extends FunctionalTestCase
                     'yet_working_cache' => [
                         'backend' => TransientMemoryBackend::class,
                     ],
+                    'yellow_cache' => [
+                        'backend' => TransientMemoryBackend::class,
+                    ],
                     'good_cache' => [
                         'backend' => TransientMemoryBackend::class,
                     ],
@@ -100,6 +103,11 @@ class FallbackCacheTest extends FunctionalTestCase
             'yet_working_cache' => [
                 'backend' => TransientMemoryBackend::class,
                 'fallback' => 'fallback_fallback_cache',
+            ],
+            'yellow_cache' => [
+                'backend' => TransientMemoryBackend::class,
+                'fallback' => 'fallback_fallback_cache',
+                'yellow_to_red_rate' => '2/minute',
             ],
             'good_cache' => [
                 'backend' => FileBackend::class,
@@ -197,5 +205,40 @@ class FallbackCacheTest extends FunctionalTestCase
 
         // NullBackend should not return the value
         $this->assertFalse($cache->get('foo'));
+    }
+
+    /**
+     * @test
+     * @throws NoSuchCacheException
+     */
+    #[Test]
+    public function testYellowStatusEscalatesToRedWhenConfiguredRateIsReached(): void
+    {
+        $cacheManager = GeneralUtility::makeInstance(CacheManager::class);
+        assert($cacheManager instanceof \Weakbit\FallbackCache\Cache\CacheManager);
+
+        $eventDispatcher = GeneralUtility::makeInstance(EventDispatcherInterface::class);
+        $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::GREEN, 'yellow_cache'));
+
+        $cache = $cacheManager->getCache('yellow_cache');
+        $this->assertTrue($cache->getBackend() instanceof TransientMemoryBackend);
+
+        $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::YELLOW, 'yellow_cache'));
+        $this->assertSame(StatusEnum::YELLOW, $cacheManager->getCacheStatus('yellow_cache'));
+
+        $cache = $cacheManager->getCache('yellow_cache');
+        $this->assertTrue($cache->getBackend() instanceof TransientMemoryBackend);
+
+        $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::YELLOW, 'yellow_cache'));
+        $this->assertSame(StatusEnum::YELLOW, $cacheManager->getCacheStatus('yellow_cache'));
+
+        $cache = $cacheManager->getCache('yellow_cache');
+        $this->assertTrue($cache->getBackend() instanceof TransientMemoryBackend);
+
+        $eventDispatcher->dispatch(new CacheStatusEvent(StatusEnum::YELLOW, 'yellow_cache'));
+        $this->assertSame(StatusEnum::RED, $cacheManager->getCacheStatus('yellow_cache'));
+
+        $cache = $cacheManager->getCache('yellow_cache');
+        $this->assertTrue($cache->getBackend() instanceof NullBackend);
     }
 }

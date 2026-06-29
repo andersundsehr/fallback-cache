@@ -9,6 +9,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use RuntimeException;
+use Symfony\Component\RateLimiter\LimiterInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Exception\DuplicateIdentifierException;
 use TYPO3\CMS\Core\Cache\Exception\InvalidBackendException;
@@ -22,6 +24,7 @@ use Weakbit\FallbackCache\Enum\StatusEnum;
 use Weakbit\FallbackCache\Event\CacheStatusEvent;
 use Weakbit\FallbackCache\Exception\NoFallbackFoundException;
 use Weakbit\FallbackCache\Exception\RecursiveFallbackCacheException;
+use Weakbit\FallbackCache\RateLimiter\Storage\CacheFrontendStorage;
 
 class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerAwareInterface
 {
@@ -67,15 +70,23 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
         }
     }
 
+    /**
+     * @param string $identifier
+     * @throws NoSuchCacheException
+     */
+    #[Override]
     public function getCache($identifier): FrontendInterface
     {
         // could set to red during runtime of this(!) process
         if (!isset(static::$status[$identifier]) || static::$status[$identifier] !== StatusEnum::RED) {
             // can be null e.g. if the class was not found.
-            /** @var FrontendInterface|null $cache */
-            $cache = @parent::getCache($identifier);
-            if ($cache) {
-                return $cache;
+            try {
+                // @phpstan-ignore-next-line TYPO3 v13 may return null when cache creation fails.
+                return @parent::getCache($identifier);
+            } catch (NoSuchCacheException $exception) {
+                throw $exception;
+            } catch (Throwable) {
+                // Continue with the configured fallback chain.
             }
         }
 
@@ -118,14 +129,158 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
             return;
         }
 
+        if ($status === StatusEnum::YELLOW) {
+            $status = $this->applyYellowToRedRate($identifier);
+        } else {
+            $this->resetYellowToRedRate($identifier);
+        }
+
         static::$status[$identifier] = $status;
         try {
             $cache = $this->getCache('weakbit__fallback_cache');
             $cache->set('status', static::$status);
-        } catch (NoSuchCacheException) {
+        } catch (Throwable) {
         }
     }
 
+    public function getCacheStatus(string $identifier): StatusEnum|false
+    {
+        if (isset(static::$status[$identifier])) {
+            return static::$status[$identifier];
+        }
+
+        try {
+            $cache = $this->getCache('weakbit__fallback_cache');
+            $status = $cache->get('status');
+        } catch (Throwable) {
+            return false;
+        }
+
+        if (!is_array($status)) {
+            return false;
+        }
+
+        $cacheStatus = $status[$identifier] ?? false;
+        if (!$cacheStatus instanceof StatusEnum) {
+            return false;
+        }
+
+        static::$status[$identifier] = $cacheStatus;
+        return $cacheStatus;
+    }
+
+    private function applyYellowToRedRate(string $identifier): StatusEnum
+    {
+        $rateConfig = $this->getYellowToRedRateConfig($identifier);
+        if ($rateConfig === null) {
+            return StatusEnum::YELLOW;
+        }
+
+        try {
+            if (!$this->createYellowToRedLimiter($identifier, $rateConfig)->consume()->isAccepted()) {
+                return StatusEnum::RED;
+            }
+        } catch (Throwable $throwable) {
+            $this->logger?->warning('Could not apply yellow-to-red rate limit for ' . $identifier . ': ' . $throwable->getMessage());
+        }
+
+        return StatusEnum::YELLOW;
+    }
+
+    private function resetYellowToRedRate(string $identifier): void
+    {
+        $rateConfig = $this->getYellowToRedRateConfig($identifier);
+        if ($rateConfig === null) {
+            return;
+        }
+
+        try {
+            $this->createYellowToRedLimiter($identifier, $rateConfig)->reset();
+        } catch (Throwable) {
+        }
+    }
+
+    /**
+     * @param array{limit: int, interval: string} $rateConfig
+     */
+    private function createYellowToRedLimiter(string $identifier, array $rateConfig): LimiterInterface
+    {
+        $cache = $this->getCache('weakbit__fallback_cache');
+        $limiterFactory = new RateLimiterFactory(
+            [
+                'id' => 'fallback-cache-yellow-to-red',
+                'policy' => 'sliding_window',
+                'limit' => $rateConfig['limit'],
+                'interval' => $rateConfig['interval'],
+            ],
+            new CacheFrontendStorage($cache)
+        );
+
+        return $limiterFactory->create($identifier);
+    }
+
+    /**
+     * @return array{limit: int, interval: string}|null
+     */
+    private function getYellowToRedRateConfig(string $identifier): ?array
+    {
+        $rate = $this->cacheConfigurations[$identifier]['yellow_to_red_rate'] ?? 0;
+
+        if (!is_string($rate)) {
+            return null;
+        }
+
+        $rate = trim($rate);
+        if ($rate === '' || $rate === '0') {
+            return null;
+        }
+
+        if (!preg_match('/^(?<limit>\d+)\s*(?:r|requests?|events?)?\s*(?:\/|per|in|within|every)\s*(?:(?<amount>\d+|a|an|one)\s*)?(?<unit>[a-z]+)$/i', $rate, $matches)) {
+            return null;
+        }
+
+        $limit = (int)$matches['limit'];
+        if ($limit <= 0) {
+            return null;
+        }
+
+        $amount = match (strtolower($matches['amount'])) {
+            'a', 'an', 'one', '' => 1,
+            default => (int)$matches['amount'],
+        };
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $unit = $this->normalizeRateIntervalUnit($matches['unit']);
+        if ($unit === null) {
+            return null;
+        }
+
+        return [
+            'limit' => $limit,
+            'interval' => $amount . ' ' . $unit,
+        ];
+    }
+
+    private function normalizeRateIntervalUnit(string $unit): ?string
+    {
+        return match (strtolower($unit)) {
+            's', 'sec', 'secs', 'second', 'seconds' => 'second',
+            'm', 'min', 'mins', 'minute', 'minutes' => 'minute',
+            'h', 'hr', 'hrs', 'hour', 'hours' => 'hour',
+            'd', 'day', 'days' => 'day',
+            default => null,
+        };
+    }
+
+    /**
+     * @param string $identifier
+     * @throws InvalidBackendException
+     * @throws InvalidCacheException
+     * @throws DuplicateIdentifierException
+     */
+    #[Override]
     protected function createCache($identifier): void
     {
         if ($this->isStatusRed($identifier)) {
@@ -228,6 +383,7 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     }
 
     /**
+     * @param string $groupIdentifier
      * @inheritdoc
      */
     #[Override]
@@ -278,6 +434,8 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     }
 
     /**
+     * @param string $groupIdentifier
+     * @param array<string> $tags
      * @inheritdoc
      */
     #[Override]
@@ -304,6 +462,7 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     }
 
     /**
+     * @param string $tag
      * @inheritdoc
      */
     #[Override]
@@ -320,6 +479,7 @@ class CacheManager extends \TYPO3\CMS\Core\Cache\CacheManager implements LoggerA
     }
 
     /**
+     * @param array<string> $tags
      * @inheritdoc
      */
     #[Override]

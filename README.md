@@ -38,6 +38,8 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages'] = 
     ],
     // If the cache creation fails (Status red) this cache is used 
     'fallback' => 'pages_fallback',
+    // Optional: turn yellow status events into red when this rate is exceeded
+    'yellow_to_red_rate' => '10/minute',
     // The concrete frontend the 'frontend' is based on
     'concrete_frontend' => \TYPO3\CMS\Core\Cache\Frontend\VariableFrontend::class,
     'groups' => [
@@ -57,17 +59,40 @@ You can *chain* them and also define a fallback for the fallback cache.
 
 You could end the chain with a cache with the NullBackend, if that also fails the hope for this TYPO3 request is lost. But using no cache may bring down your server, but that depends on the server and application.
 
+## Yellow Status Rate
+
+The custom `VariableFrontend` emits a `YELLOW` status when cache read/write operations fail at runtime. By default, `YELLOW` does not switch to the fallback cache because the primary cache may recover.
+
+Set `yellow_to_red_rate` on a cache configuration to promote `YELLOW` events to `RED` when a rate is exceeded:
+
+```PHP
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['pages']['yellow_to_red_rate'] = '10/minute';
+```
+
+With this example, ten `YELLOW` events for `pages` are tolerated per minute. The next `YELLOW` event inside the same minute is stored as `RED`. Once the status is `RED`, the cache manager uses the configured `fallback` cache. A `GREEN` status resets the limiter.
+
+Supported formats include:
+
+- `10/m`
+- `10r/m`
+- `10/minute`
+- `10 events in a minute`
+- `100/hour`
+- `100 per 1 hour`
+
+## Status Cache Backend
+
+Use a high-speed backend for `weakbit__fallback_cache`, for example Redis or another low-latency cache. This cache stores only small status and counter payloads, but it may see many read/write operations while cache backends are unstable.
+
 ## Immutable Cache Configuration
 
-This extension provides the ability to mark certain caches as "immutable", which means they will not be affected by cache flushing operations. This is particularly useful for caches that contain data that rarely changes and is expensive to regenerate, such as compiled templates, code caches, or reference data.
+This extension provides the ability to mark certain caches as "immutable", which means they will not be affected by cache flushing operations. This is particularly useful for caches that contain data that rarely changes and is expensive to regenerate.
 
 ⚠️ **WARNING**: Immutable caches must be manually managed by developers. The system will NOT automatically clear these caches during regular maintenance operations!
 
 ### How to Configure Immutable Caches
 
 To mark a cache as immutable, add the `tags` configuration with the `immutable` property set to `true`:
-
-
 
 ```PHP
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['my_immutable_cache'] = [
@@ -95,17 +120,6 @@ When a cache is marked as immutable:
 
 This feature ensures that important cache entries remain available even during maintenance operations or when other parts of the system trigger cache flushes.
 
-### When to Use Immutable Caches
-
-Consider using immutable caches for:
-
-- Compiled templates or CSS/JS assets that rarely change
-- Code caches that are expensive to regenerate
-- Core configuration data that is only updated during system upgrades
-- Any cache data where regeneration would cause significant load on the system
-
-When you need to update an immutable cache, you'll need to manually clear it using direct backend operations or by temporarily removing the immutable flag.
-
 # How to Access the Cache Status
 
 1. Log in to your TYPO3 backend
@@ -123,5 +137,3 @@ When you need to update an immutable cache, you'll need to manually clear it usi
 # Credits
 
 Inspired by https://packagist.org/packages/b13/graceful-cache
-
-Uses code from https://github.com/marketing-factory/typo3_prometheus
