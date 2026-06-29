@@ -130,10 +130,6 @@ This feature ensures that important cache entries remain available even during m
 
 ![Cache Status in System Information Toolbar](Documentation/system-information.png)
 
-# TODO
-
-- [ ] Refactor addCacheStatus to comply with external calls
-
 # Credits
 
 Inspired by https://packagist.org/packages/b13/graceful-cache

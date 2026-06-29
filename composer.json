@@ -1,10 +1,19 @@
 {
   "name": "weakbit/fallback-cache",
-  "description": "Uses a fallback cache if your cache has status red",
+  "description": "Keeps TYPO3 sites responsive by switching cache operations to configured fallback backends when primary cache backends fail.",
   "license": [
     "GPL-2.0-or-later"
   ],
   "type": "typo3-cms-extension",
+  "keywords": [
+    "typo3",
+    "typo3-cms-extension",
+    "cache",
+    "fallback-cache",
+    "redis",
+    "high-availability",
+    "resilience"
+  ],
   "require": {
     "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
     "symfony/polyfill-php83": "^1.31",
