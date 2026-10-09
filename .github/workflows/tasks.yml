@@ -34,6 +34,7 @@ jobs:
           restore-keys: |
             ${{ matrix.typo3 }}-${{ matrix.php }}-composer-
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - run: composer config lock true
       # CI-only alias until TYPO3 accepts the security-fixed svg-sanitize ^1.0.
       - run: composer require "enshrined/svg-sanitize:1.0.0 as 0.22.99" --dev --no-update --sort-packages --no-interaction
       - run: composer update --no-interaction --with typo3/minimal:^${{ matrix.typo3 }}.0.0 --with typo3/cms-core:^${{ matrix.typo3 }}.0.0
