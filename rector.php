@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use PLUS\GrumPHPConfig\RectorSettings;
 use PLUS\GrumPHPConfig\VersionUtility;
-use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
@@ -22,7 +21,6 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->parallel();
     $rectorConfig->importNames();
     $rectorConfig->importShortClasses();
-    $rectorConfig->cacheClass(FileCacheStorage::class);
     $rectorConfig->cacheDirectory('./var/cache/rector');
 
     $paths = array_filter(
