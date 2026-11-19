@@ -13,8 +13,12 @@ jobs:
       fail-fast: true
       max-parallel: 1
       matrix:
-        php: [ '82', '83', '84', '85' ]
+        php: [ '82', '83', '84', '85', '86' ]
         typo3: [ '13', '14' ]
+        include:
+          # phpro/grumphp does not allow PHP 8.6 yet
+          - php: '86'
+            ignorePlatformReqs: '--ignore-platform-req=php+'
     container:
       image: ghcr.io/typo3/core-testing-php${{ matrix.php }}:latest
     steps:
@@ -34,6 +38,11 @@ jobs:
           restore-keys: |
             ${{ matrix.typo3 }}-${{ matrix.php }}-composer-
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - run: composer update --no-interaction --with typo3/minimal:^${{ matrix.typo3 }}.0.0 --with typo3/cms-core:^${{ matrix.typo3 }}.0.0
+      # the composer audit task of GrumPHP runs with --locked and needs a composer.lock
+      - run: composer config lock true
+      - run: composer update --no-interaction --with typo3/minimal:^${{ matrix.typo3 }}.0.0 --with typo3/cms-core:^${{ matrix.typo3 }}.0.0 ${{ matrix.ignorePlatformReqs }}
+      # --ignore-platform-req=php+ may only skip the PHP check of dev dependencies (e.g. phpro/grumphp)
+      - if: matrix.php == '86'
+        run: composer check-platform-reqs --no-dev
       - run: ./vendor/bin/grumphp run --ansi --no-interaction
       - run: composer test
